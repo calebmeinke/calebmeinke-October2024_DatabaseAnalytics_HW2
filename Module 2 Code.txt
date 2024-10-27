@@ -1,0 +1,138 @@
+Option Explicit
+
+Sub stock_analysis()
+    ' Declare Constants
+    Const HEADER_ROW As Integer = 1
+    Const FIRST_DATA_ROW As Integer = 2
+    Const INPUT_TICKER_COL As Integer = 1
+    Const OPEN_COL As Integer = 3
+    Const CLOSE_COL As Integer = 6
+    Const INPUT_VOL_COL As Integer = 7
+    Const OUTPUT_TICKER_COL As Integer = 9
+    Const CHANGE_COL As Integer = 10
+    Const PCT_CHANGE_COL As Integer = 11
+    Const OUTPUT_VOL_COL As Integer = 12
+    Const COLOR_RED As Integer = 3
+    Const COLOR_GREEN As Integer = 4
+    Const GREATEST_TICKER_COL As Integer = 15
+    Const GREATEST_VALUE_COL As Integer = 16
+    Const GREATEST_TITLE_COL As Integer = 14
+    Const GREATEST_PCT_INCREASE_ROW As Integer = 2
+    Const GREATEST_PCT_DECREASE_ROW As Integer = 3
+    Const GREATEST_TOTAL_VOLUME_ROW As Integer = 4
+    
+    ' Declare Variables
+    Dim Worksheet As Worksheet
+    Dim total_volume As LongLong
+    Dim input_row As Long
+    Dim output_row As Integer
+    Dim change As Double
+    Dim change_frac As Double
+    Dim open_price As Double
+    Dim last_data_row As Long
+    Dim current_ticker As String
+    Dim greatest_pct_increase_ticker As String
+    Dim greatest_pct_decrease_ticker As String
+    Dim greatest_volume_ticker As String
+    Dim greatest_pct_increase As Double
+    Dim greatest_pct_decrease As Double
+    Dim greatest_volume As Double
+    
+    For Each Worksheet In ActiveWorkbook.Worksheets
+        Worksheet.Activate
+        ' Set title row
+        Cells(HEADER_ROW, OUTPUT_TICKER_COL).Value = "Ticker"
+        Cells(HEADER_ROW, CHANGE_COL).Value = "Quarterly Change"
+        Cells(HEADER_ROW, PCT_CHANGE_COL).Value = "Percent Change"
+        Cells(HEADER_ROW, OUTPUT_VOL_COL).Value = "Total Volume"
+        Cells(HEADER_ROW, GREATEST_TICKER_COL).Value = "Ticker"
+        Cells(HEADER_ROW, GREATEST_VALUE_COL).Value = "Value"
+        Cells(GREATEST_PCT_INCREASE_ROW, GREATEST_TITLE_COL).Value = "Greatest % Increase"
+        Cells(GREATEST_PCT_DECREASE_ROW, GREATEST_TITLE_COL).Value = "Greatest % Decrease"
+        Cells(GREATEST_TOTAL_VOLUME_ROW, GREATEST_TITLE_COL).Value = "Greatest Total Volume"
+    
+        ' Set initial values
+        output_row = FIRST_DATA_ROW
+        total_volume = 0
+        open_price = Cells(FIRST_DATA_ROW, OPEN_COL).Value
+    
+        ' Get the row number of the last row with data
+        last_data_row = Cells(Rows.Count, "A").End(xlUp).Row
+        
+        'Initialize greatest % increase, greatest % decrease, and greatest total volume
+        greatest_pct_increase = 0
+        greatest_pct_increase_ticker = ""
+        greatest_pct_decrease = 0
+        greatest_pct_decrease_ticker = ""
+        greatest_volume = 0
+        greatest_volume_ticker = ""
+        
+        ' Row loop
+        For input_row = FIRST_DATA_ROW To last_data_row
+            current_ticker = Cells(input_row, INPUT_TICKER_COL).Value
+            total_volume = total_volume + Cells(input_row, INPUT_VOL_COL).Value
+            
+            ' Print results when the ticker changes
+            If Cells(input_row + 1, INPUT_TICKER_COL).Value <> current_ticker Then
+                ' Input
+                
+                ' Calculations
+                change = Cells(input_row, CLOSE_COL).Value - open_price
+                If open_price <> 0 Then
+                    change_frac = (change / open_price)
+                Else
+                    change_frac = 0
+                End If
+                ' Largest Percent Increase
+                If change_frac > greatest_pct_increase Then
+                    greatest_pct_increase = change_frac
+                    greatest_pct_increase_ticker = current_ticker
+                End If
+                ' Largest Percent Decrease
+                If change_frac < greatest_pct_decrease Then
+                    greatest_pct_decrease = change_frac
+                    greatest_pct_decrease_ticker = current_ticker
+                End If
+                'Highest Total Volume
+                If total_volume > greatest_volume Then
+                    greatest_volume = total_volume
+                    greatest_volume_ticker = current_ticker
+                End If
+                
+                ' Output
+                Cells(output_row, OUTPUT_TICKER_COL).Value = current_ticker
+                Cells(output_row, CHANGE_COL).Value = change
+                If (Cells(output_row, CHANGE_COL).Value >= 0) Then
+                    Cells(output_row, CHANGE_COL).Interior.ColorIndex = COLOR_GREEN
+                Else
+                    Cells(output_row, CHANGE_COL).Interior.ColorIndex = COLOR_RED
+                End If
+                Cells(output_row, PCT_CHANGE_COL).Value = FormatPercent(change_frac)
+                If (Cells(output_row, PCT_CHANGE_COL).Value >= 0) Then
+                    Cells(output_row, PCT_CHANGE_COL).Interior.ColorIndex = COLOR_GREEN
+                Else
+                    Cells(output_row, PCT_CHANGE_COL).Interior.ColorIndex = COLOR_RED
+                End If
+                Cells(output_row, OUTPUT_VOL_COL).Value = total_volume
+                Cells(GREATEST_PCT_INCREASE_ROW, GREATEST_TICKER_COL) = greatest_pct_increase_ticker
+                Cells(GREATEST_PCT_DECREASE_ROW, GREATEST_TICKER_COL) = greatest_pct_decrease_ticker
+                Cells(GREATEST_TOTAL_VOLUME_ROW, GREATEST_TICKER_COL) = greatest_volume_ticker
+                Cells(GREATEST_PCT_INCREASE_ROW, GREATEST_VALUE_COL) = FormatPercent(greatest_pct_increase)
+                Cells(GREATEST_PCT_DECREASE_ROW, GREATEST_VALUE_COL) = FormatPercent(greatest_pct_decrease)
+                Cells(GREATEST_TOTAL_VOLUME_ROW, GREATEST_VALUE_COL) = greatest_volume
+                
+                ' Prepare/Reset for next stock
+                output_row = output_row + 1
+                total_volume = 0
+                open_price = Cells(input_row + 1, OPEN_COL).Value
+    
+            End If
+        Next input_row
+                
+   
+    Next Worksheet
+    
+
+    MsgBox "Done"
+
+End Sub
